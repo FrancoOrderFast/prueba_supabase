@@ -1,4 +1,7 @@
 import { Resend } from "resend";
+import { renderAsync } from "@react-email/components";
+import React from "react";
+import { WelcomeEmail } from "./templates/WelcomeEmail.tsx";
 import { ResponseHelper } from "./response-helper.ts";
 import { LoggerHelper } from "./logger-helper.ts";
 
@@ -11,10 +14,30 @@ export const sendEmailHandler = async (
 ): Promise<Response> => {
   LoggerHelper.info("Initiating email send process");
   try {
+    let name = "Franco";
+    let actionUrl = "https://orderfast.com.ar";
+
+    if (_request.body && _request.headers.get("content-type")?.includes("application/json")) {
+      try {
+        const body = await _request.clone().json();
+        if (body.name) name = body.name;
+        if (body.actionUrl) actionUrl = body.actionUrl;
+      } catch (e) {
+        LoggerHelper.info("Failed to parse request JSON body, using defaults", e);
+      }
+    }
+
     const fromEmail = RESEND_EMAIL || "onboarding@resend.dev";
     const toEmail = "franco.g@orderfast.com.ar"; // Tu email registrado en Resend
-    const subject = "Hello World";
-    const html = "<strong>it works!</strong>";
+    const subject = "¡Bienvenido a OrderFast!";
+
+    // Render the React Email template
+    const html = await renderAsync(
+      React.createElement(WelcomeEmail, {
+        name,
+        actionUrl,
+      })
+    );
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
