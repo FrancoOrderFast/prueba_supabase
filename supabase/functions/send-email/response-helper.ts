@@ -1,3 +1,5 @@
+import { LoggerHelper } from "./logger-helper.ts";
+
 export class ResponseHelper {
   static success<T>(data: T, status: number = 200): Response {
     return new Response(JSON.stringify(data), {
@@ -19,9 +21,16 @@ export class ResponseHelper {
       errorPayload = { error };
     }
 
-    console.error(errorPayload);
+    // Si el error original contiene un código de estado (como los de Resend)
+    let finalStatus = status;
+    if (error && typeof error === "object" && "statusCode" in error) {
+      finalStatus = (error as { statusCode?: number }).statusCode || status;
+    }
+
+    LoggerHelper.error("Response helper caught an error:", errorPayload);
+
     return new Response(JSON.stringify(errorPayload), {
-      status,
+      status: finalStatus,
       headers: { "Content-Type": "application/json" },
     });
   }
